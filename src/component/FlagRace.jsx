@@ -8,7 +8,7 @@ const LastOneWinsRace = () => {
 
   const [winner, setWinner] = useState(null);
   const [remaining, setRemaining] = useState(0);
-  const [timer, setTimer] = useState(10);
+  const [timer, setTimer] = useState(20); // 🔥 20 sec
 
   const lastMovementRef = useRef(Date.now());
   const timerIntervalRef = useRef(null);
@@ -44,25 +44,26 @@ const LastOneWinsRace = () => {
     setWinner(null);
     setRemaining(countries.length);
     lastMovementRef.current = Date.now();
-    setTimer(10);
+    setTimer(20);
 
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
 
-    engineRef.current.gravity.y = 0.8;
+    engineRef.current.gravity.y = 1.2; // ⚡ faster gravity
+    engineRef.current.timing.timeScale = 1.3; // ⚡ overall speed boost
 
     const wallOptions = { 
       isStatic: true, 
       render: { fillStyle: '#333' }, 
-      restitution: 0.8 
+      restitution: 0.9 
     };
 
     const obs = [];
 
-    // Side walls
+    // Walls
     obs.push(Matter.Bodies.rectangle(5, 300, 10, 600, wallOptions));
     obs.push(Matter.Bodies.rectangle(595, 300, 10, 600, wallOptions));
 
-    // Simple zig-zag track
+    // Zig-zag track
     obs.push(Matter.Bodies.rectangle(150, 120, 300, 15, { ...wallOptions, angle: 0.2 }));
     obs.push(Matter.Bodies.rectangle(450, 240, 300, 15, { ...wallOptions, angle: -0.2 }));
     obs.push(Matter.Bodies.rectangle(150, 360, 300, 15, { ...wallOptions, angle: 0.2 }));
@@ -79,15 +80,16 @@ const LastOneWinsRace = () => {
       label: 'PIT'
     });
 
-    // Spawn balls
+    // Balls
     countries.forEach((code, i) => {
       const ball = Matter.Bodies.circle(
         50 + Math.random() * 500,
         -50 - (i * 35),
         13,
         {
-          restitution: 0.7,
-          friction: 0.05,
+          restitution: 0.9,
+          friction: 0.01,
+          frictionAir: 0.001,
           label: 'COUNTRY',
           customName: countryNames[code],
           countryCode: code,
@@ -114,9 +116,9 @@ const LastOneWinsRace = () => {
       }
     });
 
-    // TIMER
+    // ⏱️ TIMER (20 sec)
     const startTimer = () => {
-      let timeLeft = 10;
+      let timeLeft = 20;
       setTimer(timeLeft);
 
       timerIntervalRef.current = setInterval(() => {
@@ -127,8 +129,12 @@ const LastOneWinsRace = () => {
           clearInterval(timerIntervalRef.current);
 
           const bodies = engine.world.bodies.filter(b => b.label === 'COUNTRY');
+
           bodies.forEach(body => {
-            Matter.Body.setVelocity(body, { x: body.velocity.x * 0.5, y: -15 });
+            Matter.Body.setVelocity(body, { 
+              x: body.velocity.x * 0.8, 
+              y: -20 // 🚀 strong jump
+            });
           });
 
           setTimeout(startTimer, 2000);
@@ -136,7 +142,7 @@ const LastOneWinsRace = () => {
       }, 1000);
     };
 
-    // STUCK CHECK
+    // Stuck fix
     const stuckCheck = setInterval(() => {
       const now = Date.now();
       const bodies = engine.world.bodies.filter(b => b.label === 'COUNTRY');
@@ -152,7 +158,7 @@ const LastOneWinsRace = () => {
       }
     }, 1000);
 
-    // DRAW FLAGS
+    // Draw flags
     Matter.Events.on(render, 'afterRender', () => {
       const ctx = render.context;
 
@@ -172,7 +178,7 @@ const LastOneWinsRace = () => {
       });
     });
 
-    // COLLISION
+    // Collision
     Matter.Events.on(engine, 'collisionStart', (event) => {
       event.pairs.forEach(pair => {
         if (pair.bodyA.label === 'PIT' || pair.bodyB.label === 'PIT') {
